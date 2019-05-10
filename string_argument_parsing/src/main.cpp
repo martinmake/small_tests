@@ -1,31 +1,42 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <algorithm>
 #include <stdlib.h>
 
 int main(int argc, char* argv[])
 {
-	(void) argc;
+	if (argc != 2)
+		exit(1);
 
 	std::string args = argv[1];
 
-	for (size_t first = args.find_first_of('"'), second; first != std::string::npos; first = args.find_first_of('"')) {
-		second = args.find_first_of('"', first + 1);
-
-		if (second == std::string::npos) {
-			std::cout << "[-] EXPECTED SYMBOL '\"`" << std::endl;
-			exit(1);
-		}
-
-		std::string arg = args.substr(first + 1, second - first - 1);
-		args.erase(first, second - first + 1);
-
-		std::cout << arg << std::endl;
+	if (std::count(args.begin(), args.end(), '"') % 2 != 0) {
+		std::cout << "[-] EXPECTED ‘\"’" << std::endl;
+		exit(1);
 	}
 
-	std::stringstream args_stream(args);
-	for (std::string arg; args_stream >> arg; )
-		std::cout << arg << std::endl;
+	args.erase(0, args.find_first_not_of(' '));
+	args.erase(args.find_last_not_of(' ') + 1);
+	char stopper = args[0] == '"' ? '"' : ' ';
+
+ 	for (std::string::iterator it = args.begin() + (stopper == '"' ? 1 : 0); it < args.end(); it++) {
+		static std::string arg = "";
+
+		if (*it == stopper) {
+			it++;
+			while (*it == ' ')
+				it++;
+
+			stopper = *it == '"' ? '"' : ' ';
+
+			std::cout << arg << std::endl;
+
+			arg.clear();
+		} else {
+			arg.push_back(*it);
+		}
+ 	}
 
 	return 0;
 }
