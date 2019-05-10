@@ -24,10 +24,11 @@ int main(void)
 	signal(SIGINT, finish);
 
 	while (1) {
-		std::string       line;
-		std::stringstream line_stream;
-		std::string       statement;
-		std::string       command; std::string       argv;
+		std::string              line;
+		std::stringstream        line_stream;
+		std::string              statement;
+		std::string              command;
+		std::vector<std::string> args;
 
 		std::cout << "> ";
 
@@ -39,17 +40,22 @@ int main(void)
 
 			if (statement.find_first_of(' ') == std::string::npos) {
 				command = statement;
-				argv    = "";
 			} else {
 				command = statement.substr(0, statement.find_first_of(' '));
-				argv    = statement.substr(command.size(), statement.size());
-				argv.erase(0, argv.find_first_not_of(' '));
-				if (argv.find_last_of(' ') != std::string::npos)
-					argv.erase(argv.find_last_of(' '), argv.size());
+
+				if (statement.count('"') % 2 != 0) {
+					std::cout << "[-] ODD NUMBER OF \"" << std::endl;
+					continue;
+				}
+
+				args    = statement.substr(command.size(), statement.size());
+				args.erase(0, args.find_first_not_of(' '));
+				if (args.find_last_of(' ') != std::string::npos)
+					args.erase(args.find_last_of(' '), args.size());
 			}
 
 			if (commands.find(command)->second)
-				commands.find(command)->second(argv);
+				commands.find(command)->second(args);
 			else
 				std::cout << "[-] COMMAND NOT FOUND" << std::endl;
 		}
