@@ -51,18 +51,15 @@ inline int Ini::get_section_key_count(const std::string& section)
 inline std::vector<std::string> Ini::get_section_keys(const std::string& section)
 {
 	int key_count = get_section_key_count(section);
-	std::vector<std::string> keys;
-	keys.reserve(key_count);
-	const char** tmp_keys = (const char**) alloca(key_count);
+	const char** keys = (const char**) alloca(key_count);
 
-	iniparser_getseckeys(m_ini, section.c_str(), tmp_keys);
+	iniparser_getseckeys(m_ini, section.c_str(), keys);
 
-	for (int i = 0; i < key_count; i++) {
-		keys.push_back(tmp_keys[i]);
-		keys.back().erase(0, keys.back().find_first_of(':') + 1);
-	}
+	std::vector<std::string> key_vect(keys, keys + key_count);
+	for (std::string& key : key_vect)
+		key.erase(0, key.find_first_of(':') + 1);
 
-	return keys;
+	return key_vect;
 }
 
 inline std::string Ini::get_string(const std::string& section, const std::string& key)
