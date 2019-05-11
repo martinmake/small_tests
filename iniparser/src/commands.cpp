@@ -46,11 +46,17 @@ void list(const std::vector<std::string>& args)
 		for (int i = 0; i < section_count; i++)
 			printf("[%s]\n", ini.get_section_name(i).c_str());
 	} else {
-		for (std::string arg : args) {
-			std::vector<std::string> keys = ini.get_section_keys(arg);
-			printf("[%s]\n", arg.c_str());
+		for (const std::string& section : args) {
+			if (!ini.find_section(section)) {
+				std::cout << "[-] SECTION NOT PRESENT ";
+				printf("[%s]\n", section.c_str());
+				continue;
+			}
+
+			std::vector<std::string> keys = ini.get_section_keys(section);
+			printf("[%s]\n", section.c_str());
 			for (std::string key : keys)
-				std::cout << key << " = " << ini.get_string(arg, key) << std::endl;
+				std::cout << key << " = " << ini.get_string(section, key) << std::endl;
 		}
 	}
 }
