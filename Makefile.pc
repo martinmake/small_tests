@@ -1,3 +1,5 @@
+# vim: filetype=make
+
 include $(MAKEFILE).config
 include Makefile.config
 
@@ -21,7 +23,7 @@ INC:=$(addprefix -I,$(IDIRS) $(LIDIR))
 CCFLAGS :=$(WARNING) $(OPTIMIZATION) $(INC)  $(DEFS) -std=c99
 CXXFLAGS:=$(WARNING) $(OPTIMIZATION) $(INC)  $(DEFS) -std=c++14
 ASMFLAGS:=$(WARNING) $(OPTIMIZATION) $(INC)  $(DEFS)
-LDFLAGS :=$(WARNING) $(OPTIMIZATION) -L$(LADIR) -Wl,--gc-sections
+LDFLAGS :=$(WARNING) $(OPTIMIZATION) -L$(ARCDIR) -Wl,--gc-sections
 
 .SECONDARY: $(OBJS)
 
