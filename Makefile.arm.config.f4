@@ -1,0 +1,3 @@
+DRV_IDIRS+=$(DRV_DIR)/STM32F4xx_HAL_Driver/Inc
+TARGET:=-mcpu=cortex-m4 -mthumb -mfloat-abi=softfp -fsingle-precision-constant
+DEVICE:=STM32F40XX
