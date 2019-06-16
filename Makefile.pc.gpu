@@ -1,0 +1,65 @@
+# vim: filetype=make
+
+include $(MAKEFILE).config
+include Makefile.config
+
+LIBS+=
+DEFS+=$(EDEFS) PROOT='"$(realpath .)"'
+
+LIBS  :=$(addprefix -l,$(LIBS))
+DEFS  :=$(addprefix -D,$(DEFS))
+
+CUDA_SRCS  :=$(shell find $(SDIR) -name '*.cu'  )
+
+CUDA_OBJS:=$(patsubst $(SDIR)/%.cu,$(ODIR)/%.o,$(CUDA_SRCS))
+OBJS     :=$(CUDA_OBJS)
+
+INC:=$(addprefix -I,$(IDIRS) $(LIDIR))
+
+NVCCFLAGS:=$(WARNING) $(OPTIMIZATION) $(INC) $(DEFS)
+LDFLAGS  :=           $(OPTIMIZATION) -L$(ARCDIR) --gc-sections
+NVCCFLAGS:=$(addprefix -Xcompiler ,$(NVCCFLAGS))
+LDFLAGS  :=$(addprefix -Xlinker ,  $(LDFLAGS))
+
+.SECONDARY: $(OBJS)
+
+.PHONY: all
+all: $(ELF)
+	@echo "> BULDING"
+	$(OBJCOPY) -j .data -j .text -O ihex   $(ELF)   $(HEX)
+	$(OBJCOPY) -j .data -j .text -O binary $(ELF)   $(BIN)
+	$(OBJDUMP) -DCz                        $(ELF) > $(ASM)
+	$(SIZE) $(HEX) | sed -e 's/^/* /'
+	@echo "< BUILDING DONE"
+
+$(ELF): $(OBJS)
+	@echo "> LINKING"
+	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
+	@echo "< LINKING DONE"
+
+$(ODIR)/%.o: $(SDIR)/%.cu
+	@echo "> COMPILING: $<"
+	$(NVCC) $(NVCCFLAGS) -c $< -o $@
+	@echo "< COMPILING: $< DONE"
+
+$(DDIR)/%.d: $(SDIR)/%.cu
+	@echo "> BUILDING DEPENDENCY: $<"
+	$(NVCC) $(INC) -MM $< -MT '$(patsubst $(DDIR)/%.d,$(ODIR)/%.o,$@)' > $@
+	@echo "< BUILDING DEPENDENCY: $< DONE"
+
+.PHONY: setup
+setup:
+	@echo "> MAKING DIRECTORIES"
+	mkdir -p $(BDIR) $(ODIR) $(DDIR) $(IDIRS) $(SDIR)
+	touch $(BDIR)/.empty $(ODIR)/.empty $(DDIR)/.empty
+	@echo "< MAKING DIRECTORIES DONE"
+
+.PHONY: clean
+clean:
+	@echo "> CLEANING"
+	-rm -vfr ./$(ODIR)/* ./$(DDIR)/* $(ELF) $(HEX) $(BIN) $(ASM) | sed -e 's/^/* /'
+	@echo "< CLEANING DONE"
+
+ifeq ($(NODEP),)
+-include $(patsubst $(SDIR)/%.cu,$(DDIR)/%.d,$(CUDA_SRCS))
+endif
