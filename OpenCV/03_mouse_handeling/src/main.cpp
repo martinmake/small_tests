@@ -9,8 +9,7 @@
 
 void mouse_event_handler(int event, int x, int y, int flags, void* userdata)
 {
-	(void) flags;
-	(void) userdata;
+	cv::Mat& image = *((cv::Mat*) userdata);
 
 	x = round(x / SCALE);
 	y = round(y / SCALE);
@@ -48,10 +47,10 @@ void mouse_event_handler(int event, int x, int y, int flags, void* userdata)
 int main(void)
 {
 	const std::string winname = "WINDOW";
-	cv::Mat image = cv::Mat::zeros(28, 28, CV_8UC1);
+	cv::Mat image = cv::Mat::ones(28, 28, CV_8UC1);
 
 	cv::namedWindow(winname, cv::WINDOW_AUTOSIZE);
-	cv::setMouseCallback(winname, mouse_event_handler, nullptr);
+	cv::setMouseCallback(winname, mouse_event_handler, &image);
 
 	while (1)
 	{
