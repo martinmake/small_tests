@@ -13,21 +13,18 @@
 #define BLOCK_DIMX (0x20)
 #define BLOCK_DIMY (0x20)
 
-__global__ void convolve(uint8_t* image, uint8_t* convolved_image, uint32_t nx)
+__global__ void convolve(uint8_t* image, uint8_t* convolved_image, float* global_kernel, uint8_t knx, uint8_t kny, uint32_t nx)
 {
 	uint32_t ix = blockIdx.x * BLOCK_DIMX + threadIdx.x;
 	uint32_t iy = blockIdx.y * BLOCK_DIMY + threadIdx.y;
 	uint32_t i = (iy * (nx - 2) + ix) * 3;
 
-	const uint8_t knx = 3;
-	const uint8_t kny = 3;
+	__shared__ float kernel[kny * knx];
 
-	float kernel[kny][knx] =
-	{
-		{ 1.0, 1.0, 1.0 },
-		{ 1.0, 1.0, 1.0 },
-		{ 1.0, 1.0, 1.0 }
-	};
+	if (threadIdx.x < 3 && threadIdx.y < 3)
+		kernel[threadIdx.y * knx + threadIdx.x] = global_kernel[threadIdx.y * knx + threadIdx.x];
+
+	__syncthreads();
 
 	for (uint8_t color_offset = 0; color_offset < 3; color_offset++)
 	{

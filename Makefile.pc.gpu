@@ -3,23 +3,30 @@
 include $(MAKEFILE).config
 include Makefile.config
 
-LIBS+=
+LIBS+=cuda cudart
 DEFS+=$(EDEFS) PROOT='"$(realpath .)"'
 
 LIBS  :=$(addprefix -l,$(LIBS))
 DEFS  :=$(addprefix -D,$(DEFS))
 
-CUDA_SRCS  :=$(shell find $(SDIR) -name '*.cu'  )
+C_SRCS   :=$(shell find $(SDIR) -name '*.c'  )
+CXX_SRCS :=$(shell find $(SDIR) -name '*.cpp')
+ASM_SRCS :=$(shell find $(SDIR) -name '*.S'  )
+CUDA_SRCS:=$(shell find $(SDIR) -name '*.cu' )
 
+C_OBJS   :=$(patsubst $(SDIR)/%.c,  $(ODIR)/%.o,$(C_SRCS)  )
+CXX_OBJS :=$(patsubst $(SDIR)/%.cpp,$(ODIR)/%.o,$(CXX_SRCS))
+ASM_OBJS :=$(patsubst $(SDIR)/%.S,  $(ODIR)/%.o,$(ASM_SRCS))
 CUDA_OBJS:=$(patsubst $(SDIR)/%.cu,$(ODIR)/%.o,$(CUDA_SRCS))
-OBJS     :=$(CUDA_OBJS)
+OBJS     :=$(C_OBJS) $(CXX_OBJS) $(ASM_OBJS) $(CUDA_OBJS)
 
 INC:=$(addprefix -I,$(IDIRS) $(LIDIR))
 
-NVCCFLAGS:=$(WARNING) $(OPTIMIZATION) $(INC) $(DEFS)
-LDFLAGS  :=           $(OPTIMIZATION) -L$(ARCDIR) --gc-sections
-NVCCFLAGS:=$(addprefix -Xcompiler ,$(NVCCFLAGS))
-LDFLAGS  :=$(addprefix -Xlinker ,  $(LDFLAGS))
+CCFLAGS  :=$(WARNING) $(OPTIMIZATION) $(INC) $(DEFS) -std=c99
+CXXFLAGS :=$(WARNING) $(OPTIMIZATION) $(INC) $(DEFS) -std=c++14
+ASMFLAGS :=$(WARNING) $(OPTIMIZATION) $(INC) $(DEFS)
+NVCCFLAGS:=$(addprefix -Xcompiler ,$(WARNING) $(OPTIMIZATION) $(INC) $(DEFS) -Wno-pedantic)
+LDFLAGS  :=$(WARNING) $(OPTIMIZATION) -L$(ARCDIR) -L$(CUDADIR) -Wl,--gc-sections
 
 .SECONDARY: $(OBJS)
 
@@ -37,11 +44,35 @@ $(ELF): $(OBJS)
 	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 	@echo "< LINKING DONE"
 
+$(ODIR)/%.o: $(SDIR)/%.c
+	@echo "> COMPILING: $<"
+	$(CC)   $(CCFLAGS) -c $< -o $@
+	@echo "< COMPILING: $< DONE"
+$(ODIR)/%.o: $(SDIR)/%.cpp
+	@echo "> COMPILING: $<"
+	$(CXX)  $(CXXFLAGS) -c $< -o $@
+	@echo "< COMPILING: $< DONE"
+$(ODIR)/%.o: $(SDIR)/%.S
+	@echo "> COMPILING: $<"
+	$(ASMC) $(ASMFLAGS) -c $< -o $@
+	@echo "< COMPILING: $< DONE"
 $(ODIR)/%.o: $(SDIR)/%.cu
 	@echo "> COMPILING: $<"
 	$(NVCC) $(NVCCFLAGS) -c $< -o $@
 	@echo "< COMPILING: $< DONE"
 
+$(DDIR)/%.d: $(SDIR)/%.c
+	@echo "> BUILDING DEPENDENCY: $<"
+	$(CC)   $(INC) -MM $< -MT '$(patsubst $(DDIR)/%.d,$(ODIR)/%.o,$@)' > $@
+	@echo "< BUILDING DEPENDENCY: $< DONE"
+$(DDIR)/%.d: $(SDIR)/%.cpp
+	@echo "> BUILDING DEPENDENCY: $<"
+	$(CXX)  $(INC) -MM $< -MT '$(patsubst $(DDIR)/%.d,$(ODIR)/%.o,$@)' > $@
+	@echo "< BUILDING DEPENDENCY: $< DONE"
+$(DDIR)/%.d: $(SDIR)/%.S
+	@echo "> BUILDING DEPENDENCY: $<"
+	$(ASMC) $(INC) -MM $< -MT '$(patsubst $(DDIR)/%.d,$(ODIR)/%.o,$@)' > $@
+	@echo "< BUILDING DEPENDENCY: $< DONE"
 $(DDIR)/%.d: $(SDIR)/%.cu
 	@echo "> BUILDING DEPENDENCY: $<"
 	$(NVCC) $(INC) -MM $< -MT '$(patsubst $(DDIR)/%.d,$(ODIR)/%.o,$@)' > $@
@@ -61,5 +92,8 @@ clean:
 	@echo "< CLEANING DONE"
 
 ifeq ($(NODEP),)
--include $(patsubst $(SDIR)/%.cu,$(DDIR)/%.d,$(CUDA_SRCS))
+-include $(patsubst $(SDIR)/%.c,  $(DDIR)/%.d,$(C_SRCS)   )
+-include $(patsubst $(SDIR)/%.cpp,$(DDIR)/%.d,$(CXX_SRCS) )
+-include $(patsubst $(SDIR)/%.S,  $(DDIR)/%.d,$(ASM_SRCS) )
+-include $(patsubst $(SDIR)/%.cu, $(DDIR)/%.d,$(CUDA_SRCS))
 endif
