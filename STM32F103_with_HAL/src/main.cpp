@@ -27,30 +27,16 @@ void GPIO_Init(void)
 	HAL_GPIO_WritePin(LED2_GPIO_PORT, LED2_PIN, GPIO_PIN_SET);
 }
 
-void systickInit(uint16_t frequency)
-{
-	(void) SysTick_Config(72000000 / frequency);
-}
-
-static volatile uint32_t ticks;
-
-extern "C" void SysTick_Handler(void)
-{
-	  ticks++;
-	  HAL_IncTick();
-}
-
 int main(void)
 {
 	HAL_Init();
 	GPIO_Init();
-	systickInit(10000);
 
-	HAL_GPIO_WritePin(LED1_GPIO_PORT, LED1_PIN, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(LED2_GPIO_PORT, LED2_PIN, GPIO_PIN_RESET);
 	while (1)
 	{
 		HAL_GPIO_TogglePin(LED1_GPIO_PORT, LED1_PIN);
 		HAL_GPIO_TogglePin(LED2_GPIO_PORT, LED2_PIN);
-		HAL_Delay(1000);
+		HAL_Delay(100);
 	}
 }

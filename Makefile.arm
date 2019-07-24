@@ -98,9 +98,10 @@ setup:
 	@echo "< SETTING UP PROJECT DONE"
 
 .PHONY: clean
+clean: CLEAN_FILES:=$(ELF) $(HEX) $(BIN) $(ASM) $(shell find ./$(ODIR) ./$(DDIR) -type f -name '[!.]*')
 clean:
 	@echo "> CLEANING"
-	-rm -vfr ./$(ODIR)/* ./$(DDIR)/* $(ELF) $(HEX) $(BIN) $(ASM) | sed -e 's/^/* /'
+	-rm -vfr $(shell echo $(CLEAN_FILES) | tr " " "\n" | sort) | sed -e 's/^/* /'
 	@echo "< CLEANING DONE"
 	@echo "> CLEANING DRIVERS"
 	+make -C $(DRV_DIR) clean | sed 's/^/\t/'
