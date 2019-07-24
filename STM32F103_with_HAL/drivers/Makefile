@@ -6,8 +6,6 @@ ARC:=lib$(notdir $(realpath .)).a
 
 # TARGET
 TARGET:=-mcpu=cortex-m3 -mthumb -mfloat-abi=softfp -fsingle-precision-constant
-# DEVICE:=STM32F10X_HD STM32F103xB
-DEVICE:=STM32F103xB
 
 # TOOLCHAIN
 TOOLCHAIN:=arm-none-eabi-
