@@ -1,4 +1,3 @@
 # WIP
-DRV_IDIRS+=$(DRV_DIR)/STM32F1xx_HAL_Driver/Inc
 TARGET:=-mcpu=cortex-m3 -mthumb -mfloat-abi=softfp -fsingle-precision-constant
-DEVICE:=STM32F30XX
+DEVICE:=STM32F10XX

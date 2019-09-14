@@ -4,31 +4,29 @@ include Makefile.config
 export TARGET DEVICE
 
 # LIBS+=standard
-DEFS+=$(EDEFS)
+DEFS+=$(ENVIROMENTAL_DEFS)
 DEFS+=$(DEVICE)
-# DEFS+=F_CPU=$(F_CPU)
-# DEFS+=BAUD=$(BAUD)
 
-LIBS  :=$(addprefix -l,$(LIBS))
-DEFS  :=$(addprefix -D,$(DEFS))
+LIBS:=$(addprefix -l,$(LIBS))
+DEFS:=$(addprefix -D,$(DEFS))
 
-C_SRCS  :=$(shell find $(SDIR) -name '*.c'  )
-CXX_SRCS:=$(shell find $(SDIR) -name '*.cpp')
-ASM_SRCS:=$(shell find $(SDIR) -name '*.S'  )
+SRCS_C  :=$(shell find $(DIR_SRC) -name '*.c'  )
+SRCS_CXX:=$(shell find $(DIR_SRC) -name '*.cpp')
+SRCS_ASM:=$(shell find $(DIR_SRC) -name '*.S'  )
 
-C_OBJS  :=$(patsubst $(SDIR)/%.c,  $(ODIR)/%.o,$(C_SRCS)  )
-CXX_OBJS:=$(patsubst $(SDIR)/%.cpp,$(ODIR)/%.o,$(CXX_SRCS))
-ASM_OBJS:=$(patsubst $(SDIR)/%.S,  $(ODIR)/%.o,$(ASM_SRCS))
-OBJS    :=$(C_OBJS) $(CXX_OBJS) $(ASM_OBJS)
+OBJS_C  :=$(patsubst $(DIR_SRC)/%.c,  $(DIR_OBJ)/%.o,$(SRCS_C)  )
+OBJS_CXX:=$(patsubst $(DIR_SRC)/%.cpp,$(DIR_OBJ)/%.o,$(SRCS_CXX))
+OBJS_ASM:=$(patsubst $(DIR_SRC)/%.S,  $(DIR_OBJ)/%.o,$(SRCS_ASM))
+OBJS    :=$(OBJS_C) $(OBJS_CXX) $(OBJS_ASM)
 
-INC:=$(addprefix -I,$(IDIRS) $(LIB_IDIR) $(DRV_IDIRS))
+INC:=$(addprefix -I,$(DIRS_INC) $(DIR_INC_LIB) $(DIRS_INC_DRV))
 
 LDSCRIPTS:=$(addprefix -T,$(LDSCRIPTS))
 
-CCFLAGS  :=$(WARNING) $(OPTIMIZATION) -s $(TARGET) $(INC) $(DEFS) -std=c99
-CXXFLAGS :=$(WARNING) $(OPTIMIZATION) -s $(TARGET) $(INC) $(DEFS) -std=c++14 -fno-rtti
-ASMCFLAGS:=$(WARNING) $(OPTIMIZATION) -s $(TARGET) $(INC) $(DEFS)
-LDFLAGS  :=$(WARNING) $(OPTIMIZATION)    $(TARGET) $(LDSCRIPTS) -Wl,--gc-sections --specs=nosys.specs
+FLAGS_CC  :=$(WARNING) $(OPTIMIZATION) -s $(TARGET) $(INC) $(DEFS) -std=c99
+FLAGS_CXX :=$(WARNING) $(OPTIMIZATION) -s $(TARGET) $(INC) $(DEFS) -std=c++14 -fno-rtti
+FLAGS_ASMC:=$(WARNING) $(OPTIMIZATION) -s $(TARGET) $(INC) $(DEFS)
+FLAGS_LD  :=$(WARNING) $(OPTIMIZATION)    $(TARGET) $(LDSCRIPTS) -Wl,--gc-sections --specs=nosys.specs
 
 .SECONDARY: $(OBJS)
 
@@ -41,41 +39,39 @@ all: $(ELF)
 	$(SIZE) $(HEX) | sed -e 's/^/* /'
 	@echo "< BULDING DONE"
 
-$(BIN): $(ELF)
-
-$(ELF): $(OBJS) $(DRV_ARC)
+$(ELF): $(OBJS) $(ARC_DRV)
 	@echo "> LINKING"
-	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
+	$(LD) $(FLAGS_LD) $^ $(LIBS) -o $@
 	@echo "< LINKING DONE"
 
-$(ODIR)/%.o: $(SDIR)/%.c
+$(DIR_OBJ)/%.o: $(DIR_SRC)/%.c
 	@echo "> COMPILING $<"
-	$(CC)   $(CCFLAGS)   -c $< -o $@
+	$(CC)   $(FLAGS_CC)   -c $< -o $@
 	@echo "< COMPILING $< DONE"
-$(ODIR)/%.o: $(SDIR)/%.cpp
+$(DIR_OBJ)/%.o: $(DIR_SRC)/%.cpp
 	@echo "> COMPILING $<"
-	$(CXX)  $(CXXFLAGS)  -c $< -o $@
+	$(CXX)  $(FLAGS_CXX)  -c $< -o $@
 	@echo "< COMPILING $< DONE"
-$(ODIR)/%.o: $(SDIR)/%.S
+$(DIR_OBJ)/%.o: $(DIR_SRC)/%.S
 	@echo "> COMPILING $<"
-	$(ASMC) $(ASMCFLAGS) -c $< -o $@
+	$(ASMC) $(FLAGS_ASMC) -c $< -o $@
 	@echo "< COMPILING $< DONE"
-$(DRV_ARC):
+$(ARC_DRV):
 	@echo "> COMPILING DRIVERS"
-	+make -C $(DRV_DIR) | sed 's/^/\t/'
+	+make -C $(DIR_DRV) | sed 's/^/\t/'
 	@echo "< COMPILING DRIVERS DONE"
 
-$(DDIR)/%.d: $(SDIR)/%.c
+$(DIR_DEP)/%.d: $(DIR_SRC)/%.c
 	@echo "> BUILDING DEPENDENCIES $<"
-	$(CC)   $(CCFLAGS)   -MM $< -MT '$(patsubst $(DDIR)/%.d,$(ODIR)/%.o,$@)' > $@
+	$(CC)   $(FLAGS_CC)   -MM $< -MT '$(patsubst $(DIR_DEP)/%.d,$(DIR_OBJ)/%.o,$@)' > $@
 	@echo "< BUILDING DEPENDENCIES $< DONE"
-$(DDIR)/%.d: $(SDIR)/%.cpp
+$(DIR_DEP)/%.d: $(DIR_SRC)/%.cpp
 	@echo "> BUILDING DEPENDENCIES $<"
-	$(CXX)  $(CXXFLAGS)  -MM $< -MT '$(patsubst $(DDIR)/%.d,$(ODIR)/%.o,$@)' > $@
+	$(CXX)  $(FLAGS_CXX)  -MM $< -MT '$(patsubst $(DIR_DEP)/%.d,$(DIR_OBJ)/%.o,$@)' > $@
 	@echo "< BUILDING DEPENDENCIES $< DONE"
-$(DDIR)/%.d: $(SDIR)/%.S
+$(DIR_DEP)/%.d: $(DIR_SRC)/%.S
 	@echo "> BUILDING DEPENDENCIES $<"
-	$(ASMC) $(ASMCFLAGS) -MM $< -MT '$(patsubst $(DDIR)/%.d,$(ODIR)/%.o,$@)' > $@
+	$(ASMC) $(FLAGS_ASMC) -MM $< -MT '$(patsubst $(DIR_DEP)/%.d,$(DIR_OBJ)/%.o,$@)' > $@
 	@echo "< BUILDING DEPENDENCIES $< DONE"
 
 .PHONY: flash
@@ -87,28 +83,22 @@ flash: $(BIN)
 .PHONY: serial
 serial:
 	@echo "> SERIAL MONITOR"
-	sudo tio -b $(BAUD) -d 8 -s 2 -e -mINLCRNL $(PORT)
+	sudo tio -b $(SERIAL_BAUDRATE) -d 8 -s 2 -e -mINLCRNL $(PORT)
 	@echo "> SERIAL MONITOR DONE"
 
-.PHONY: setup
-setup:
-	@echo "> SETTING UP PROJECT"
-	mkdir -p $(BDIR) $(ODIR) $(DDIR) $(IDIRS) $(SDIR)
-	touch $(BDIR)/.empty $(ODIR)/.empty $(DDIR)/.empty
-	@echo "< SETTING UP PROJECT DONE"
+.PHONY: bear
+bear:
+	@better-bear $(DIR_SRC) $(DIRS_INC)
 
 .PHONY: clean
-clean: CLEAN_FILES:=$(ELF) $(HEX) $(BIN) $(ASM) $(shell find ./$(ODIR) ./$(DDIR) -type f -name '[!.]*')
+clean: CLEAN_FILES:=$(ELF) $(HEX) $(BIN) $(ASM) $(shell find ./$(DIR_OBJ) ./$(DIR_DEP) -type f -name '[!.]*')
 clean:
 	@echo "> CLEANING"
 	-rm -vfr $(shell echo $(CLEAN_FILES) | tr " " "\n" | sort) | sed -e 's/^/* /'
 	@echo "< CLEANING DONE"
-	@echo "> CLEANING DRIVERS"
-	+make -C $(DRV_DIR) clean | sed 's/^/\t/'
-	@echo "< CLEANING DRIVERS DONE"
 
-ifeq ($(NODEP),)
--include $(patsubst $(SDIR)/%.c,  $(DDIR)/%.d,$(C_SRCS)  )
--include $(patsubst $(SDIR)/%.cpp,$(DDIR)/%.d,$(CXX_SRCS))
--include $(patsubst $(SDIR)/%.S,  $(DDIR)/%.d,$(ASM_SRCS))
+ifeq ($(NO_DEPENDENCIES),)
+-include $(patsubst $(DIR_SRC)/%.c,  $(DIR_DEP)/%.d,$(SRCS_C)  )
+-include $(patsubst $(DIR_SRC)/%.cpp,$(DIR_DEP)/%.d,$(SRCS_CXX))
+-include $(patsubst $(DIR_SRC)/%.S,  $(DIR_DEP)/%.d,$(SRCS_ASM))
 endif
