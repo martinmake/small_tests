@@ -1,4 +1,4 @@
-MAKEFILE:=../../Makefile.pc.gpu
+MAKEFILE:=../../Makefile.pc
 
 export MAKEFILE
 

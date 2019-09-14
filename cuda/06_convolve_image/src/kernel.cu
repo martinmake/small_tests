@@ -15,8 +15,8 @@
 
 __global__ void convolve(uint8_t* image, uint8_t* convolved_image, float* global_kernel, uint8_t knx, uint8_t kny, uint32_t nx)
 {
-	uint32_t ix = blockIdx.x * BLOCK_DIMX + threadIdx.x;
-	uint32_t iy = blockIdx.y * BLOCK_DIMY + threadIdx.y;
+	uint32_t ix = blockIdx.x * blockDim.x + threadIdx.x;
+	uint32_t iy = blockIdx.y * blockDim.y + threadIdx.y;
 	uint32_t i = (iy * (nx - 2) + ix) * 3;
 
 	__shared__ float kernel[kny * knx];
